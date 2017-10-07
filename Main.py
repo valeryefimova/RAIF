@@ -1,9 +1,12 @@
 import pandas as pd
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_squared_error
+from sklearn.decomposition import PCA
 
 data = pd.read_csv("data.csv", header=0, sep=";")
 
@@ -63,10 +66,26 @@ for i in range(0, rows):
         X[i][offset + bin_vals[j].index(smth)] = 1.0
         offset += binarized[j]
 
-#print(X[0])
-#print(y)
+for i in range(0, 10):
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.01, random_state=i)
+    gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, y_train)
+    predictions = gbm.predict(X_test)
+    rg = xgb.XGBRegressor().fit(X_train, y_train)
+    predictions_reg = rg.predict(X_test)
+    print('Classification score = ' + str(accuracy_score(y_test, predictions))
+          + ' Regression score = ' + str(mean_squared_error(y_test, predictions_reg)))
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25)
-gbm = xgb.XGBClassifier(max_depth=3, n_estimators=300, learning_rate=0.05).fit(X_train, y_train)
-predictions = gbm.predict(X_test)
-print(accuracy_score(y_test, predictions))
+    X_test = PCA(n_components=2).fit_transform(X_test)
+
+    plt.figure(figsize=(8, 6))
+    zero_class = np.where(predictions_reg < 0.3)
+    one_class = np.where(predictions_reg > 0.7)
+    true_zero_class = np.where(y_test < 1)
+    true_one_class = np.where(y_test > 0)
+    plt.scatter(X_test[true_zero_class, 0], X_test[true_zero_class, 1], s=40, c='b', edgecolors=(0, 0, 0), label='true class 0')
+    plt.scatter(X_test[true_one_class, 0], X_test[true_one_class, 1], s=40, c='orange', edgecolors=(0, 0, 0), label='true class 1')
+    plt.scatter(X_test[zero_class, 0], X_test[zero_class, 1], s=160, edgecolors='b',
+                facecolors='none', linewidths=2, label='class 0')
+    plt.scatter(X_test[one_class, 0], X_test[one_class, 1], s=80, edgecolors='orange',
+                facecolors='none', linewidths=2, label='class 1')
+    plt.show()
