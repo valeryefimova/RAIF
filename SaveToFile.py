@@ -152,6 +152,6 @@ print(d.shape)
 
 np.savetxt(fname="data/X.csv", X=X, delimiter=";", comments="", header="claim_id;Event_type;Period_EvCl;Period_StEv;Policy_agent_cat;Owner_type;FLAG_Owner_bl;Insurer_type;FLAG_Insurer_bl;Policy_KBM;Policy_KS;Policy_KT;Policy_KVS;FLAG_Policy_KO;FLAG_Policy_KP;FLAG_Policy_KPR;FLAG_Policy_type;VEH_age;VEH_aim_use;VEH_capacity_type;VEH_model;VEH_type_name;FLAG_bad_region;FLAG_dsago;FLAG_prolong;Owner_region;Sales_channel;Policy_loss_count;Damage_count;bad;Claim_type")
 np.savetxt(fname="data/y.csv", X=y, delimiter=";", comments="", header="FLAG_trial")
-np.savetxt(fname="data/transformed.csv", X=d, delimiter=";", comments="", header="claim_id;Event_type;Period_EvCl;Period_StEv;Policy_agent_cat;Owner_type;FLAG_Owner_bl;Insurer_type;FLAG_Insurer_bl;Policy_KBM;Policy_KS;Policy_KT;Policy_KVS;FLAG_Policy_KO;FLAG_Policy_KP;FLAG_Policy_KPR;FLAG_Policy_type;VEH_age;VEH_aim_use;VEH_capacity_type;VEH_model;VEH_type_name;FLAG_bad_region;FLAG_dsago;FLAG_prolong;Owner_region;Sales_channel;Policy_loss_count;Damage_count;bad;Claim_type;FLAG_trial")
+np.savetxt(fname="data/transformed.csv", X=d, delimiter=";", comments="", header=";;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;")
 
 

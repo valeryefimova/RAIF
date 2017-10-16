@@ -1,36 +1,39 @@
 import tensorflow as tf
-import pandas as pd
 
 
-def read_data(num_epochs, shuffle):
-    df_data = pd.read_csv(
-        tf.gfile.Open("data/X.csv"),
-        skipinitialspace=True,
-        engine="python",
-        skiprows=1)
+def read_my_file(filename_queue):
+    reader = tf.TextLineReader(skip_header_lines=1)
+    unused, file_lines = reader.read(filename_queue)
+    # 76 default values:
+    default_tensors = [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0],
+                       [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0],
+                       [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0],
+                       [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0],
+                       [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0],
+                       [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]]
 
-    labels = pd.read_csv(
-        tf.gfile.Open("data/y.csv"),
-        skipinitialspace=True,
-        engine="python",
-        skiprows=1)
-
-    return tf.estimator.inputs.pandas_input_fn(
-        x=df_data,
-        y=labels,
-        batch_size=100,
-        num_epochs=num_epochs,
-        shuffle=shuffle,
-        num_threads=5)
+    columns = tf.decode_csv(file_lines, record_defaults=default_tensors, field_delim=";")
+    features = tf.stack(columns[0:75])
+    label = tf.stack(columns[75])
+    return features, label
 
 
-COLUMNS = ["claim_id", "Event_type", "Period_EvCl", "Period_StEv", "Policy_agent_cat", "Owner_type", "FLAG_Owner_bl",
-           "Insurer_type", "FLAG_Insurer_bl", "Policy_KBM", "Policy_KS", "Policy_KT", "Policy_KVS", "FLAG_Policy_KO",
-           "FLAG_Policy_KP", "FLAG_Policy_KPR", "FLAG_Policy_type", "VEH_age", "VEH_aim_use", "VEH_capacity_type",
-           "VEH_model", "VEH_type_name", "FLAG_bad_region", "FLAG_dsago", "FLAG_prolong", "Owner_region",
-           "Sales_channel", "Policy_loss_count", "Damage_count", "bad", "Claim_type"]
+filename_queue = tf.train.string_input_producer(["data/transformed.csv"])
+
+with tf.Session() as sess:
+    sess.run([tf.global_variables_initializer(), tf.local_variables_initializer()])
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(coord=coord)
+
+    features, label = read_my_file(filename_queue=filename_queue)
+    X, Y = tf.train.batch([features, label], batch_size=8519)
+    tf.set_random_seed(42)
+
+    # TODO: actual model training should be here:
+    # ...
 
 
-m = tf.estimator.LinearClassifier(feature_columns=COLUMNS)
-m.train(input_fn=read_data(2, True), steps=2000)
 
+    # stop and join all threads
+    coord.request_stop()
+    coord.join(threads)
