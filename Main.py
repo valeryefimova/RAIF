@@ -9,23 +9,33 @@ from sklearn.metrics import mean_squared_error
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LogisticRegression
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, Lasso, ElasticNet, OrthogonalMatchingPursuit, BayesianRidge, Perceptron
+from sklearn.svm import SVR
+from sklearn.feature_selection import SelectKBest, chi2
 
 data = pd.read_csv("data.csv", header=0, sep=";")
 
-to_drop = [0]
+to_drop = [0, 20]
 to_full_binarize = [1, 5, 7, 18, 21, 26]
 binarized = {1:0, 5:0, 7:0, 18:0, 21:0, 26:0}
 car_number = 20
 region = [25]
 region_to_group = 8
-car_group = 37
+car_group = 38
 target_feature = 29
 rows, columns = data.shape
 
-#for i in range(0, rows):
-#    if (data.iloc[i][target_feature] == 1):
-#        print(data.iloc[i])
+car_models_bad = dict()
+for i in range(0, rows):
+    if (data.iloc[i][target_feature] == 1):
+        tmp = data.iloc[i][car_number]
+        if (tmp not in car_models_bad):
+            car_models_bad[tmp] = 0
+        else:
+            car_models_bad[tmp] += 1
+
+s = [(k, car_models_bad[k]) for k in sorted(car_models_bad, key=car_models_bad.get, reverse=True)]
+print(s)
 
 # save to dict features
 bin_vals = dict ()
@@ -56,18 +66,20 @@ num = 0
 for i in range(0, rows):
     y[i] = data.iat[i, target_feature]
     jj = 0
-    for j in range(1, columns): # drop 0-th column
+    for j in range(1, columns): # drop 0-th and 20-th column
         if (j != target_feature and j != car_number and j not in to_full_binarize and j not in region): # remove from X columns with old features
             smth = float(str(data.iat[i, j]).replace(',', '.'))
             if (math.isnan(smth)):
-                X[i][jj] = -1.0
+                X[i][jj] = -100.0
             else:
                 X[i][jj] = smth
             jj += 1
         elif (j == car_number):
             smth = data.iloc[i][j]
 
-            if ('SUBARU FORESTER' in smth or 'TOYOTA RAV4' in smth or 'VOLKSWAGEN TOUAREG' in smth
+            if ('ВАЗ' in smth):
+                X[i][new_col_num - 38] = 1.0
+            elif ('SUBARU FORESTER' in smth or 'TOYOTA RAV4' in smth or 'VOLKSWAGEN TOUAREG' in smth
                 or 'TOYOTA LAND CRUISER' in smth or 'MITSUBISHI OUTLANDER' in smth or 'BMW X5' in smth
                 or 'HONDA CR-V' in smth or 'KIA SPORTAGE' in smth or 'NISSAN QASHQAI' in smth
                 or 'NISSAN X-TRAIL' in smth or 'LEXUS RX' in smth):
@@ -86,7 +98,7 @@ for i in range(0, rows):
                 or 'NISSAN MICRA' in smth or 'NISSAN NOTE' in smth or 'HONDA FIT' in smth
                 or 'FIAT ALBEA' in smth or 'MERCEDES-BENZ A-KLASSE' in smth or 'VOLKSWAGEN POLO' in smth
                 or 'MAZDA DEMIO' in smth or 'SKODA FABIA' in smth or 'TOYOTA IST' in smth
-                or 'OPEL CORSA' in smth or 'ВАЗ' in smth or 'RENAULT LOGAN' in smth or 'HYUNDAI ACCENT' in smth
+                or 'OPEL CORSA' in smth or 'RENAULT LOGAN' in smth or 'HYUNDAI ACCENT' in smth
                 or 'LADA GRANTA' in smth or 'LADA KALINA' in smth): # B - 16
                 X[i][new_col_num - 34] = 1.0
             elif ('CHEVROLET LACETTI' in smth or 'CITROEN C4' in smth or 'FORD FOCUS' in smth
@@ -177,10 +189,10 @@ for i in range(0, rows):
                     unclass_dict[smth] = 1
                 else:
                     unclass_dict[smth] += 1
-            if (smth not in cat_vals):
-                cat_vals[smth] = num
-                num += 1
-            data.iat[i, j] = cat_vals[smth]
+            #if (smth not in cat_vals):
+            #    cat_vals[smth] = num
+            #    num += 1
+            #data.iat[i, j] = cat_vals[smth]
 
     offset = old_columns
     for j in to_full_binarize: # add columns with binirized features
@@ -216,31 +228,43 @@ s = [(k, unclass_dict[k]) for k in sorted(unclass_dict, key=unclass_dict.get, re
 print(s)
 print('number of all new features = ' + str(new_col_num))
 
-model = LogisticRegression()
-select = 50
-rfe = RFE(model, select)
-rfe = rfe.fit(X, y)
-print('Ranking of features, 1 == important')
-print(rfe.ranking_)
-selected_features = []
-for i in range(0, len(rfe.ranking_)):
-    if (rfe.ranking_[i] == 1):
-        selected_features.append(i)
+X_new = X
 
-X_new = np.array([[0.0] * select] * rows)
-for i in range(0, rows):
-    jj = 0
-    for j in range(0, new_col_num):
-        if (j in selected_features):
-            X_new[i][jj] = X[i][j]
-            jj += 1
+#X_new = SelectKBest(chi2, k=50).fit_transform(X, y)
+
+# model = LinearRegression()
+# model.fit(X, y)
+# select = 80
+# rfe = RFE(model, select)
+# rfe = rfe.fit(X, y)
+# print('Ranking of features, 1 == important')
+# print(rfe.ranking_)
+# selected_features = []
+# for i in range(0, len(rfe.ranking_)):
+#     if (rfe.ranking_[i] == 1):
+#         selected_features.append(i)
+#
+# X_new = np.array([[0.0] * select] * rows)
+# for i in range(0, rows):
+#     jj = 0
+#     for j in range(0, new_col_num):
+#         if (j in selected_features):
+#             X_new[i][jj] = X[i][j]
+#             jj += 1
 
 for i in range(0, 10):
     X_train, X_test, y_train, y_test = train_test_split(X_new, y, test_size=0.005, random_state=i)
     gbm = xgb.XGBClassifier().fit(X_train, y_train)
     predictions = gbm.predict(X_test)
-    rg = xgb.XGBRegressor().fit(X_train, y_train)
+    #rg = xgb.XGBRegressor().fit(X_train, y_train)
     #rg = LinearRegression().fit(X_train, y_train)
+    #rg = Lasso(alpha=0.1).fit(X_train, y_train) bad
+    #rg = ElasticNet(alpha=0.1, l1_ratio=0.7).fit(X_train, y_train) bad
+    #rg = OrthogonalMatchingPursuit(n_nonzero_coefs=17).fit(X_train, y_train) many mistaces
+    #rg = BayesianRidge().fit(X_train, y_train)
+    #rg = Perceptron() # fuuuuuuuuu
+    rg = SVR(C=50.0, epsilon=0.2) # good
+    rg.fit(X_train, y_train)
     predictions_reg = rg.predict(X_test)
     print('Classification score = ' + str(accuracy_score(y_test, predictions))
           + ' Regression score = ' + str(mean_squared_error(y_test, predictions_reg)))
@@ -249,8 +273,8 @@ for i in range(0, 10):
 
     plt.figure(figsize=(8, 6))
     #print(predictions_reg)
-    zero_class = np.where(predictions_reg < 0.25)
-    one_class = np.where(predictions_reg > 0.35)
+    zero_class = np.where(predictions_reg < 0.6)
+    one_class = np.where(predictions_reg > 0.6)
     true_zero_class = np.where(y_test < 1) # 0 class
     true_one_class = np.where(y_test > 0) # 1 class
     plt.scatter(X_test[true_zero_class, 0], X_test[true_zero_class, 1], s=40, c='b', edgecolors=(0, 0, 0), label='true class 0')
