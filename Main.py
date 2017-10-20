@@ -253,7 +253,7 @@ X_new = X
 #             jj += 1
 
 for i in range(0, 10):
-    X_train, X_test, y_train, y_test = train_test_split(X_new, y, test_size=0.005, random_state=i)
+    X_train, X_test, y_train, y_test = train_test_split(X_new, y, test_size=0.01, random_state=i)
     gbm = xgb.XGBClassifier().fit(X_train, y_train)
     predictions = gbm.predict(X_test)
     #rg = xgb.XGBRegressor().fit(X_train, y_train)
@@ -263,7 +263,7 @@ for i in range(0, 10):
     #rg = OrthogonalMatchingPursuit(n_nonzero_coefs=17).fit(X_train, y_train) many mistaces
     #rg = BayesianRidge().fit(X_train, y_train)
     #rg = Perceptron() # fuuuuuuuuu
-    rg = SVR(C=50.0, epsilon=0.2) # good
+    rg = SVR(C=50.0, epsilon=0.2) # good, tune hyperparameters
     rg.fit(X_train, y_train)
     predictions_reg = rg.predict(X_test)
     print('Classification score = ' + str(accuracy_score(y_test, predictions))
@@ -280,7 +280,8 @@ for i in range(0, 10):
     plt.scatter(X_test[true_zero_class, 0], X_test[true_zero_class, 1], s=40, c='b', edgecolors=(0, 0, 0), label='true class 0')
     plt.scatter(X_test[true_one_class, 0], X_test[true_one_class, 1], s=40, c='orange', edgecolors=(0, 0, 0), label='true class 1')
     plt.scatter(X_test[zero_class, 0], X_test[zero_class, 1], s=160, edgecolors='b',
-                facecolors='none', linewidths=2, label='class 0')
+                facecolors='none', linewidths=2, label='predicted class 0')
     plt.scatter(X_test[one_class, 0], X_test[one_class, 1], s=80, edgecolors='orange',
-                facecolors='none', linewidths=2, label='class 1')
+                facecolors='none', linewidths=2, label='predicted class 1')
+    plt.legend()
     plt.show()
