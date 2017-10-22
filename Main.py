@@ -4,14 +4,14 @@ import math
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import accuracy_score, mean_squared_error, f1_score
 from sklearn.decomposition import PCA
 from sklearn.feature_selection import RFE
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import LinearRegression, Lasso, ElasticNet, OrthogonalMatchingPursuit, BayesianRidge, Perceptron
-from sklearn.svm import SVR
+from sklearn.svm import SVR, SVC
 from sklearn.feature_selection import SelectKBest, chi2
+from sklearn.model_selection import LeaveOneOut, GridSearchCV
 
 data = pd.read_csv("data.csv", header=0, sep=";")
 
@@ -252,9 +252,46 @@ X_new = X
 #             X_new[i][jj] = X[i][j]
 #             jj += 1
 
+# loo = LeaveOneOut()
+# sum_reg = 0.0
+# sum_clf = 0.0
+# sum_f1  = 0.0
+# ind = 0
+# num_llo = 50
+# for train_index, test_index in loo.split(X):
+#     X_train, X_test = X[train_index], X[test_index]
+#     y_train, y_test = y[train_index], y[test_index]
+#     rg = SVR(C=50.0, epsilon=0.2)
+#     rg.fit(X_train, y_train)
+#     y_pred = rg.predict(X_test)
+#     sum_reg += mean_squared_error(y_test, y_pred)
+#
+#     svc = SVC(C=50.0)
+#     params = {'C':[1, 100]}
+#     clf = GridSearchCV(svc, params)
+#     clf.fit(X_train, y_train)
+#     y_pred = clf.predict(X_test)
+#     sum_clf += accuracy_score(y_test, y_pred)
+#     sum_f1 += f1_score(y_test, y_pred)
+#
+#     print(ind)
+#     ind += 1
+#     if (ind == num_llo):
+#         break
+#
+# sum_reg /= float(num_llo)
+# sum_clf /= float(num_llo)
+# sum_f1  /= float(num_llo)
+# print('regression error = ' + str(sum_reg))
+# print('classification accurcy = ' + str(sum_clf) + ' f1 = ' + str(sum_f1))
+
+params = {'C':[1, 100]}
 for i in range(0, 10):
     X_train, X_test, y_train, y_test = train_test_split(X_new, y, test_size=0.01, random_state=i)
-    gbm = xgb.XGBClassifier().fit(X_train, y_train)
+    #gbm = xgb.XGBClassifier().fit(X_train, y_train)
+    gbm = SVC(C=50)
+    #gbm = GridSearchCV(svc, params)
+    gbm.fit(X_train, y_train)
     predictions = gbm.predict(X_test)
     #rg = xgb.XGBRegressor().fit(X_train, y_train)
     #rg = LinearRegression().fit(X_train, y_train)
@@ -264,6 +301,7 @@ for i in range(0, 10):
     #rg = BayesianRidge().fit(X_train, y_train)
     #rg = Perceptron() # fuuuuuuuuu
     rg = SVR(C=50.0, epsilon=0.2) # good, tune hyperparameters
+    #rg = GridSearchCV(svr, params)
     rg.fit(X_train, y_train)
     predictions_reg = rg.predict(X_test)
     print('Classification score = ' + str(accuracy_score(y_test, predictions))
